@@ -1,13 +1,17 @@
 const io = require("socket.io-client");
 const request = require("request");
 
+/** Constants */
+const API_ROOT_URL = "http://localhost:3030";
+const LOGIN_URL = `${API_ROOT_URL}/login`;
+const CONVERSATION_URL = `${API_ROOT_URL}/conversation`;
 /*
  * Authenticate first, doing a post to some url
  * with the credentials for instance
  */
 request.post(
 	{
-		url: "http://localhost:3030/login",
+		url: LOGIN_URL,
 		form: { mail: "theo.champion@proton.co", password: "redcardigan" }
 	},
 	(err, resp, body) => {
