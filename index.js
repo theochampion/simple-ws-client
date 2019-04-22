@@ -14,6 +14,12 @@ const API_ROOT_URL = "http://localhost:3030";
 const LOGIN_URL = `${API_ROOT_URL}/login`;
 const CONVERSATION_URL = `${API_ROOT_URL}/conversation`;
 
+const MESSAGE_TYPES = {
+	TEXT: 0,
+	PICTURE: 1,
+	MISC: 2
+};
+
 ask = questionText => {
 	return new Promise((resolve, reject) => {
 		rl.question(questionText, input => resolve(input));
@@ -85,17 +91,23 @@ const connectToConversation = async (user, conversation_id) => {
 				`\x1b[32mConnected to conversation [${conversation_id}]\x1b[0m`
 			);
 			rl.on("line", line => {
-				socket.emit("message", { sender: user._id, content: line, type: 0 });
+				socket.emit("message", {
+					sender: user._id,
+					content: line,
+					type: MESSAGE_TYPES.TEXT
+				});
 			});
 		});
 
 		socket.on("new_message", msg => {
-			console.log(msg);
-			console.log(
-				`\x1b[${msg.sender == user._id ? "32" : "35"}m <${msg.sender}> ${
-					msg.content
-				}\x1b[0m`
-			);
+			if (msg.type == MESSAGE_TYPES.MISC)
+				console.log(`\x1b[33m${msg.content}\x1b[0m`);
+			else
+				console.log(
+					`\x1b[${msg.sender == user._id ? "32" : "35"}m<${msg.sender}> ${
+						msg.content
+					}\x1b[0m`
+				);
 		});
 
 		socket.on("disconnect", () => {
