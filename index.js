@@ -62,23 +62,6 @@ const CONVERSATION_URL = `${API_ROOT_URL}/conversation`;
 
 // 		const convoID = "ekognerknp00ng4lshn0bf40dnfyu4o2nfkdhfw4nfafn3ifnambf";
 
-// 		const socket = io.connect("http://localhost:3030", {
-// 			query: `conversation_id=${convoID}`,
-// 			transportOptions: {
-// 				polling: {
-// 					extraHeaders: {
-// 						Cookie: cookies
-// 					}
-// 				}
-// 			}
-// 		});
-// 		socket.on("connect", function() {
-// 			console.log(`\x1b[32mConnected to chat services\x1b[0m`);
-// 		});
-
-// 		socket.on("error", error => {
-// 			console.error(`Impossible to connect to chat service : "${error}"`);
-// 		});
 // 	}
 // );
 
@@ -98,11 +81,12 @@ const authenticate = async (email, password) => {
 		if (!res.ok) return null;
 		const cookies = res.headers.get("set-cookie");
 		const user = await res.json();
+		user.session = cookies;
 		console.log(
 			`\x1b[32mLogged in as \x1b[4m${user.name} ${user.lastname}\x1b\x1b[0m`
 		);
 		rl.setPrompt(`${user.name} ${user.lastname}`);
-		return cookies;
+		return user;
 	} catch (err) {
 		console.error(err);
 		return null;
@@ -134,28 +118,64 @@ const selectConversation = async session_cookie => {
 	}
 };
 
-const main = async (email, password) => {
-	const session_cookie = await authenticate(email, password);
-	if (session_cookie == null)
+const connectToConversation = async (user, conversation_id) => {
+	return new Promise((resolve, reject) => {
+		const socket = io.connect(API_ROOT_URL, {
+			query: `conversation_id=${conversation_id}`,
+			transportOptions: {
+				polling: {
+					extraHeaders: {
+						Cookie: user.session
+					}
+				}
+			}
+		});
+
+		socket.on("connect", () => {
+			console.log(
+				`\x1b[32mConnected to conversation [${conversation_id}]\x1b[0m`
+			);
+			rl.on("line", line => {
+				socket.emit("message", { sender: user._id, content: line, type: 0 });
+				console.log(`Line from file: ${line}`);
+			});
+		});
+		socket.on("new_message", msg => {
+			console.log(`[${msg.sender}] ${msg.content}`);
+		});
+
+		socket.on("disconnect", () => {
+			console.log("Disconnected");
+			resolve();
+		});
+
+		socket.on("error", error => {
+			console.error(`Impossible to connect to chat service : "${error}"`);
+			reject();
+		});
+	});
+};
+
+const main = async () => {
+	let email, password;
+	try {
+		const argv = minimist(process.argv.slice(2));
+		email = argv.email;
+		password = argv.pass;
+	} catch (err) {
+		return console.error(
+			`\x1b[35mUsage: node index.js --email <email> --pass <password>\x1b[0m`
+		);
+	}
+	const user = await authenticate(email, password);
+	if (user == null)
 		return console.error(
 			`\x1b[33mConnection failed, check your credentials. Aborting.\x1b[0m`
 		);
 
-	const conversation_id = await selectConversation(session_cookie);
-	rl.setPrompt(`[${conversation_id}]>`);
-	rl.prompt();
+	const conversation_id = await selectConversation(user.session);
+	if (conversation_id == null) return;
+	await connectToConversation(user, conversation_id);
 };
-/** Parse command line arguments and start script */
-let email, password;
-try {
-	const argv = minimist(process.argv.slice(2));
-	email = argv.email;
-	password = argv.pass;
-} catch (err) {
-	console.error(
-		`\x1b[35mUsage: node index.js --email <email> --pass <password>\x1b[0m`
-	);
-	process.exit(1);
-}
 
-main(email, password);
+main();
