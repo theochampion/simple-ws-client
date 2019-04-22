@@ -1,10 +1,25 @@
 const io = require("socket.io-client");
 const request = require("request");
+const minimist = require("minimist");
 
 /** Constants */
 const API_ROOT_URL = "http://localhost:3030";
 const LOGIN_URL = `${API_ROOT_URL}/login`;
 const CONVERSATION_URL = `${API_ROOT_URL}/conversation`;
+
+/** Parse command line arguments */
+let email, password;
+try {
+	const argv = minimist(process.argv.slice(2));
+	email = argv.email;
+	password = argv.pass;
+} catch (err) {
+	console.error(
+		`\x1b[35mUsage: node index.js --email <email> --pass <password>\x1b[0m`
+	);
+	process.exit(1);
+}
+
 /*
  * Authenticate first, doing a post to some url
  * with the credentials for instance
@@ -12,7 +27,7 @@ const CONVERSATION_URL = `${API_ROOT_URL}/conversation`;
 request.post(
 	{
 		url: LOGIN_URL,
-		form: { mail: "theo.champion@proton.co", password: "redcardigan" }
+		form: { mail: email, password: password }
 	},
 	(err, resp, body) => {
 		if (err || resp.statusCode !== 200) {
