@@ -140,10 +140,11 @@ const main = async () => {
 		return console.error(
 			`\x1b[33mConnection failed, check your credentials. Aborting.\x1b[0m`
 		);
-
-	const conversation_id = await selectConversation(user.session);
-	if (conversation_id == null) return;
-	await connectToConversation(user, conversation_id);
+	while (true) {
+		const conversation_id = await selectConversation(user.session);
+		if (conversation_id == null) process.exit(1);
+		await connectToConversation(user, conversation_id);
+	}
 };
 
 main();
