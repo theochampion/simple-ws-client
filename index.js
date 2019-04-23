@@ -64,7 +64,7 @@ const selectConversation = async session_cookie => {
 		});
 
 		const conversation_id = await ask(
-			"Select a conversation leave blank to exit : "
+			"Paste conversation id to connect to (blank to exit): "
 		);
 		return conversation_ids.includes(conversation_id) ? conversation_id : null;
 	} catch (err) {
@@ -116,7 +116,9 @@ const connectToConversation = async (user, conversation_id) => {
 		});
 
 		socket.on("error", error => {
-			console.error(`Impossible to connect to chat service : "${error}"`);
+			console.error(
+				`\x1b[31mImpossible to connect to chat service : "${error}"\x1b[0m`
+			);
 			reject();
 		});
 	});
