@@ -52,7 +52,6 @@ const createConversation = async session_cookie => {
 	try {
 		const answer = await ask("Enter comma separated list of peer ids: ");
 		const peers = answer.replace(/\s/g, "").split(",");
-		console.log(peers);
 		const res = await fetch(CONVERSATION_URL, {
 			method: "post",
 			headers: { Cookie: session_cookie, "Content-Type": "application/json" },
@@ -63,7 +62,9 @@ const createConversation = async session_cookie => {
 		console.log("Created conversation:");
 		console.log(body);
 	} catch (error) {
-		return console.error(error);
+		return console.log(
+			`\x1b[32mError creating conversation: "${error.message}"\x1b[0m`
+		);
 	}
 };
 
@@ -77,10 +78,10 @@ const selectConversation = async session_cookie => {
 		const body = await res.json();
 		if (body.conversations.length == 0) return null;
 		console.log(
-			`\x1b[35mSelect a conversation to join: (new to create new convo, exit to exit program)\x1b[0m`
+			`\x1b[35mSelect a conversation to join:\nnew - create a new conversation\nexit - exit the program\x1b[0m`
 		);
-		const conversation_ids = body.conversations.map((conversation, idx) => {
-			console.log(`[${idx}] "${conversation._id}"`);
+		const conversation_ids = body.conversations.map(conversation => {
+			console.log(`[${conversation._id}] (${conversation.peers.length} peers)`);
 			return conversation._id;
 		});
 
