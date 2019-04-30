@@ -48,6 +48,24 @@ const authenticate = async (email, password) => {
 	}
 };
 
+const createConversation = async session_cookie => {
+	try {
+		const answer = await ask("Enter comma separated list of peer ids: ");
+		const peers = answer.split(",");
+		const res = await fetch(CONVERSATION_URL, {
+			method: "post",
+			headers: { Cookie: session_cookie },
+			body: JSON.stringify({ peers: peers })
+		});
+		if (!res.ok) return null;
+		const body = await res.json();
+		console.log("Created conversation:");
+		console.log(body);
+	} catch (error) {
+		return console.error(error);
+	}
+};
+
 const selectConversation = async session_cookie => {
 	try {
 		const res = await fetch(CONVERSATION_URL, {
@@ -57,16 +75,25 @@ const selectConversation = async session_cookie => {
 		if (!res.ok) return null;
 		const body = await res.json();
 		if (body.conversations.length == 0) return null;
-		console.log(`\x1b[35mSelect a conversation to join:\x1b[0m`);
+		console.log(
+			`\x1b[35mSelect a conversation to join: (new to create new convo, exit to exit program)\x1b[0m`
+		);
 		const conversation_ids = body.conversations.map((conversation, idx) => {
 			console.log(`[${idx}] "${conversation._id}"`);
 			return conversation._id;
 		});
 
-		const conversation_id = await ask(
+		const answer = await ask(
 			"Paste conversation id to connect to (blank to exit): "
 		);
-		return conversation_ids.includes(conversation_id) ? conversation_id : null;
+		if (answer == "exit") return null;
+		else if (answer == "new") {
+			createConversation(session_cookie);
+			return selectConversation(session_cookie);
+		}
+		return conversation_ids.includes(answer)
+			? answer
+			: selectConversation(session_cookie);
 	} catch (err) {
 		console.error(err);
 		return null;
