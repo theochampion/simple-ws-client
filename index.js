@@ -51,10 +51,11 @@ const authenticate = async (email, password) => {
 const createConversation = async session_cookie => {
 	try {
 		const answer = await ask("Enter comma separated list of peer ids: ");
-		const peers = answer.split(",");
+		const peers = answer.replace(/\s/g, "").split(",");
+		console.log(peers);
 		const res = await fetch(CONVERSATION_URL, {
 			method: "post",
-			headers: { Cookie: session_cookie },
+			headers: { Cookie: session_cookie, "Content-Type": "application/json" },
 			body: JSON.stringify({ peers: peers })
 		});
 		if (!res.ok) return null;
@@ -88,12 +89,15 @@ const selectConversation = async session_cookie => {
 		);
 		if (answer == "exit") return null;
 		else if (answer == "new") {
-			createConversation(session_cookie);
+			await createConversation(session_cookie);
 			return selectConversation(session_cookie);
 		}
-		return conversation_ids.includes(answer)
-			? answer
-			: selectConversation(session_cookie);
+		if (conversation_ids.includes(answer)) return answer;
+
+		console.error(
+			`\x1b[31mInvalid conversation ID. Please select from available convos or create a new one by typing "new"\x1b[0m`
+		);
+		return selectConversation(session_cookie);
 	} catch (err) {
 		console.error(err);
 		return null;
