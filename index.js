@@ -37,10 +37,6 @@ const authenticate = async (email, password) => {
 		const cookies = res.headers.get("set-cookie");
 		const user = await res.json();
 		user.session = cookies;
-		console.log(
-			`\x1b[32mLogged in as \x1b[4m${user.name} ${user.lastname}\x1b\x1b[0m`
-		);
-		rl.setPrompt(`${user.name} ${user.lastname}`);
 		return user;
 	} catch (err) {
 		console.error(err);
@@ -74,30 +70,36 @@ const selectConversation = async session_cookie => {
 			method: "get",
 			headers: { Cookie: session_cookie }
 		});
-		if (!res.ok) return null;
+		if (!res.ok) throw "Authentication error";
 		const body = await res.json();
-		if (body.conversations.length == 0) return null;
-		console.log(
-			`\x1b[35mSelect a conversation to join:\nnew - create a new conversation\nexit - exit the program\x1b[0m`
-		);
-		const conversation_ids = body.conversations.map(conversation => {
-			console.log(`[${conversation._id}] (${conversation.peers.length} peers)`);
-			return conversation._id;
-		});
+		if (body.conversations.length == 0)
+			console.log(
+				"No conversation found. Create a new one with the 'new' command"
+			);
+		else {
+			console.log(`\x1b[35mAvailable conversations: \x1b[0m`);
+			body.conversations.map((conversation, idx) =>
+				console.log(
+					`[${idx}] "${conversation._id}" (${conversation.peers.length} peers)`
+				)
+			);
+		}
 
-		const answer = await ask(
-			"Paste conversation id to connect to (blank to exit): "
-		);
+		const answer = await ask("\x1b[35mSWSC $> \x1b[0m");
 		if (answer == "exit") return null;
 		else if (answer == "new") {
 			await createConversation(session_cookie);
 			return selectConversation(session_cookie);
 		}
-		if (conversation_ids.includes(answer)) return answer;
+		const idx = parseInt(answer);
+		if (
+			!isNaN(idx) &&
+			idx <= body.conversations.length &&
+			body.conversations.length > 0
+		)
+			return body.conversations[idx];
 
-		console.error(
-			`\x1b[31mInvalid conversation ID. Please select from available convos or create a new one by typing "new"\x1b[0m`
-		);
+		console.error(`\x1b[31mInvalid command.\x1b[0m`);
 		return selectConversation(session_cookie);
 	} catch (err) {
 		console.error(err);
@@ -172,7 +174,23 @@ const main = async () => {
 		return console.error(
 			`\x1b[33mConnection failed, check your credentials. Aborting.\x1b[0m`
 		);
-	while (true) {
+	console.log(
+		`\x1b[32mLogged in as \x1b[4m${user.name} ${user.lastname}\x1b\x1b[0m`
+	);
+	console.log(
+		`#############################################
+# Welcome to the simple ws test client      #
+#                                           #
+# Select a conversation to connect to it or #
+# enter one of the available commands :     #
+#                                           #
+#  <idx> - connect to selected conversation #                                        #
+#  new   - create new conversation          #
+#  exit  - exit the program                 #
+#                                           #
+#############################################`
+	);
+	while (true == true) {
 		const conversation_id = await selectConversation(user.session);
 		if (conversation_id == null) process.exit(1);
 		await connectToConversation(user, conversation_id);
