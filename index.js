@@ -165,7 +165,6 @@ const main = async () => {
 		email = argv.email;
 		password = argv.pass;
 		API_ROOT_URL = `${argv.host}:${argv.port}`;
-		console.log(API_ROOT_URL);
 	} catch (err) {
 		return console.error(
 			`\x1b[35mUsage: node index.js [--host <host> ] [--port <port>] --email <email> --pass <password>\x1b[0m`
@@ -181,7 +180,7 @@ const main = async () => {
 	);
 	console.log(
 		`###############################################
-# Welcome real-time chat service test client  #
+#              Welcome to SWSC                #
 #                                             #
 # Select a conversation to connect to it or   #
 # enter one of the available commands :       #
