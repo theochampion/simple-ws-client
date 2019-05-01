@@ -9,11 +9,10 @@ const rl = readline.createInterface({
 	prompt: "SWSC> "
 });
 
-/** Constants */
-const API_ROOT_URL = "http://localhost:3030";
-const LOGIN_URL = `${API_ROOT_URL}/login`;
-const CONVERSATION_URL = `${API_ROOT_URL}/conversation`;
+/** API root url used globally */
+global.API_ROOT_URL = "";
 
+/** Constants */
 const MESSAGE_TYPES = {
 	TEXT: 0,
 	PICTURE: 1,
@@ -28,7 +27,7 @@ ask = questionText => {
 
 const authenticate = async (email, password) => {
 	try {
-		const res = await fetch(LOGIN_URL, {
+		const res = await fetch(`${API_ROOT_URL}/login`, {
 			method: "post",
 			body: JSON.stringify({ mail: email, password: password }),
 			headers: { "Content-Type": "application/json" }
@@ -39,8 +38,7 @@ const authenticate = async (email, password) => {
 		user.session = cookies;
 		return user;
 	} catch (err) {
-		console.error(err);
-		return null;
+		return console.error(`\x1b[33mConnection failed: ${err.message}\x1b[0m`);
 	}
 };
 
@@ -48,7 +46,7 @@ const createConversation = async session_cookie => {
 	try {
 		const answer = await ask("Enter comma separated list of peer ids: ");
 		const peers = answer.replace(/\s/g, "").split(",");
-		const res = await fetch(CONVERSATION_URL, {
+		const res = await fetch(`${API_ROOT_URL}/conversation`, {
 			method: "post",
 			headers: { Cookie: session_cookie, "Content-Type": "application/json" },
 			body: JSON.stringify({ peers: peers })
@@ -66,7 +64,7 @@ const createConversation = async session_cookie => {
 
 const selectConversation = async session_cookie => {
 	try {
-		const res = await fetch(CONVERSATION_URL, {
+		const res = await fetch(`${API_ROOT_URL}/conversation`, {
 			method: "get",
 			headers: { Cookie: session_cookie }
 		});
@@ -161,39 +159,42 @@ const connectToConversation = async (user, conversation_id) => {
 const main = async () => {
 	let email, password;
 	try {
-		const argv = minimist(process.argv.slice(2));
+		const argv = minimist(process.argv.slice(2), {
+			default: { host: "http://localhost", port: "3030" }
+		});
 		email = argv.email;
 		password = argv.pass;
+		API_ROOT_URL = `${argv.host}:${argv.port}`;
+		console.log(API_ROOT_URL);
 	} catch (err) {
 		return console.error(
 			`\x1b[35mUsage: node index.js --email <email> --pass <password>\x1b[0m`
 		);
 	}
 	const user = await authenticate(email, password);
-	if (user == null)
-		return console.error(
-			`\x1b[33mConnection failed, check your credentials. Aborting.\x1b[0m`
-		);
+	if (user == null) process.exit(1);
+
 	console.log(
-		`\x1b[32mLogged in as \x1b[4m${user.name} ${user.lastname}\x1b\x1b[0m`
+		`\x1b[32mLogged in as \x1b[4m${user.name} ${
+			user.lastname
+		}\x1b[0m\x1b[33m (${user._id})\x1b[0m`
 	);
 	console.log(
-		`#############################################
-# Welcome to the simple ws test client      #
-#                                           #
-# Select a conversation to connect to it or #
-# enter one of the available commands :     #
-#                                           #
-#  <idx> - connect to selected conversation #                                        #
-#  new   - create new conversation          #
-#  exit  - exit the program                 #
-#                                           #
-#############################################`
+		`###############################################
+# Welcome real-time chat service test client  #
+#                                             #
+# Select a conversation to connect to it or   #
+# enter one of the available commands :       #
+#                                             #
+#  <idx> - connect to selected conversation   #                                        #
+#  new   - create new conversation            #
+#  exit  - exit the program                   #
+#                                             #
+###############################################`
 	);
 	while (true == true) {
 		const conversation_id = await selectConversation(user.session);
 		if (conversation_id == null) process.exit(1);
-		console.log(`Connecting to conversation ${conversation_id}...`);
 		await connectToConversation(user, conversation_id);
 	}
 };
