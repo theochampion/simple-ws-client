@@ -168,7 +168,7 @@ const main = async () => {
 		console.log(API_ROOT_URL);
 	} catch (err) {
 		return console.error(
-			`\x1b[35mUsage: node index.js --email <email> --pass <password>\x1b[0m`
+			`\x1b[35mUsage: node index.js [--host <host> ] [--port <port>] --email <email> --pass <password>\x1b[0m`
 		);
 	}
 	const user = await authenticate(email, password);
