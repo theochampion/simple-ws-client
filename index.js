@@ -97,7 +97,7 @@ const selectConversation = async session_cookie => {
 			idx <= body.conversations.length &&
 			body.conversations.length > 0
 		)
-			return body.conversations[idx];
+			return body.conversations[idx]._id;
 
 		console.error(`\x1b[31mInvalid command.\x1b[0m`);
 		return selectConversation(session_cookie);
@@ -193,6 +193,7 @@ const main = async () => {
 	while (true == true) {
 		const conversation_id = await selectConversation(user.session);
 		if (conversation_id == null) process.exit(1);
+		console.log(`Connecting to conversation ${conversation_id}...`);
 		await connectToConversation(user, conversation_id);
 	}
 };
